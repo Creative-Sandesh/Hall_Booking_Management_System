@@ -2,5 +2,10 @@ U001,ali,123,Ali Khan,ali@gmail.com,012-111222,CUSTOMER
 U002,boss,admin1,Super Boss,admin@sys.com,ADMIN
 U003,sarah,work123,Sarah Staff,sarah@sys.com,SCHEDULER
 U004,mike,boss123,Mike Manager,mike@sys.com,MANAGER
-C001,sandy,sandy12,Sandesh Bohara,sandesh123@gmail.com,123,CUSTOMER
+C001,sandy,12,Sandesh Bohara,sandesh123@gmail.com,123,CUSTOMER
 C002,anjal,anjal1,Anjal,anjal123@gmail.com,123,CUSTOMER
+C003,asmu,asmu,Ashmita,asmu123@gmail.com,SCHEDULER
+C004,aashika,aashika,aashika,aasu@123.com,1234,CUSTOMER
+U005,sital,sital,Sital Singh,sital123@gamil.com,SCHEDULER
+
+U006,sital,sital,sital singh,sital@gmail.com,MANAGER

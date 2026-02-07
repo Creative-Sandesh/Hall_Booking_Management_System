@@ -4,10 +4,11 @@ package enums;
 public enum FileName {
     // pointing all txt file of data folder
 
-    USERS("D:\\University_Assignments\\3n Sem\\Oop With Java\\Hall Booking Management System\\Hall Booking Management System\\data\\users.txt"),
+    USERS("data\\users.txt"),
     HALLS("D:\\University_Assignments\\3n Sem\\Oop With Java\\Hall Booking Management System\\Hall Booking Management System\\data\\halls.txt"),
     BOOKINGS("D:\\University_Assignments\\3n Sem\\Oop With Java\\Hall Booking Management System\\Hall Booking Management System\\data\\bookings.txt"),
-    ISSUES("D:\\University_Assignments\\3n Sem\\Oop With Java\\Hall Booking Management System\\Hall Booking Management System\\data\\issues.txt");
+    SCHEDULES("data\\schedules.txt"),
+    ISSUES("data\\issues.txt");
     private final String filename;
 
     // constructor

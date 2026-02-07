@@ -19,6 +19,6 @@ public class Manager extends User {
                 getPassword() + "," +
                 getName() + "," +
                 getEmail() + "," +
-                getRole();
+                "MANAGER";
     }
 }

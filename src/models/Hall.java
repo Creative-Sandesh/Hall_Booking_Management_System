@@ -5,9 +5,8 @@ public class Hall {
     private String name;
     private double pricePerHour;
     private int capacity;
-    private boolean isMaintenance; // "true" if under maintenance, "false" if available
+    private boolean isMaintenance;
 
-    // Constructor
     public Hall(String id, String name, double pricePerHour, int capacity, boolean isMaintenance) {
         this.id = id;
         this.name = name;
@@ -16,24 +15,34 @@ public class Hall {
         this.isMaintenance = isMaintenance;
     }
 
-    // Getters
+    // --- GETTERS ---
     public String getId() { return id; }
     public String getName() { return name; }
     public double getPricePerHour() { return pricePerHour; }
     public int getCapacity() { return capacity; }
-
     public boolean isMaintenance() { return isMaintenance; }
-    public void setMaintenance(boolean maintenance) { isMaintenance = maintenance; }
 
-    // Helper for saving to text file
-    // Format: H001,Grand Ballroom,300.0,1000,false
-    public String toFileString() {
-        return id + "," + name + "," + pricePerHour + "," + capacity + "," + isMaintenance;
+    // ==========================================
+    //  THIS IS THE MISSING METHOD
+    // ==========================================
+    public String getType() {
+        // Logic: Look for text inside parenthesis, e.g., "Hall A (Banquet)"
+        if (name != null && name.contains("(") && name.endsWith(")")) {
+            try {
+                // Returns "Banquet"
+                return name.substring(name.lastIndexOf("(") + 1, name.length() - 1);
+            } catch (Exception e) {
+                return "Standard";
+            }
+        }
+        return "Standard"; // Default if no brackets found
     }
 
-    // Useful for debugging or ComboBoxes
-    @Override
-    public String toString() {
-        return name + " (Cap: " + capacity + ")";
+    // --- SETTERS ---
+    public void setMaintenance(boolean maintenance) { isMaintenance = maintenance; }
+
+    // --- TO STRING (For File Saving) ---
+    public String toFileString() {
+        return String.join(",", id, name, String.valueOf(pricePerHour), String.valueOf(capacity), String.valueOf(isMaintenance));
     }
 }

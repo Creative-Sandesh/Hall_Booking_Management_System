@@ -1,16 +1,12 @@
 package views;
 
-import models.Booking;
-import models.Customer;
-import models.Hall;
-import models.Issue;
+import models.*;
 import services.FileHandler;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,25 +15,27 @@ public class CustomerDashboard extends BaseDashboard {
     private Customer customer;
 
     public CustomerDashboard(Customer customer) {
+        // 1. Call your BaseDashboard constructor
+        // We use your static color: COLOR_PRIMARY (Blue)
         super("Customer Dashboard", customer, COLOR_PRIMARY);
         this.customer = customer;
 
-        // --- SIDEBAR MENU ---
+        // 2. Add Sidebar Buttons using your helper method
         addSidebarButton("View Available Halls", e -> showHallsView());
         addSidebarButton("My Bookings", e -> showBookingsView());
-        addSidebarButton("My Issues", e -> showIssuesView()); // <--- NEW BUTTON
+        addSidebarButton("My Issues", e -> showIssuesView());
         addSidebarButton("My Profile", e -> showProfileView());
 
+        // 3. Add Logout (Your BaseDashboard handles the logic)
         addLogoutButton();
 
-        // Default Page
+        // 4. Show default view
         showHallsView();
-
         setVisible(true);
     }
 
     // ==========================================
-    // VIEW 1: AVAILABLE HALLS (Read-Only Table)
+    // VIEW 1: AVAILABLE HALLS
     // ==========================================
     private void showHallsView() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -47,17 +45,33 @@ public class CustomerDashboard extends BaseDashboard {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
 
+        // Load Data
         List<Hall> halls = FileHandler.loadHalls();
-        String[] columns = {"ID", "Hall Name", "Rate (RM/hr)", "Capacity", "Status"};
+        List<HallSchedule> schedules = FileHandler.loadSchedules();
+        LocalDate today = LocalDate.now();
 
-        // FIX: Make Table Non-Editable
+        String[] columns = {"ID", "Hall Name", "Rate (RM/hr)", "Capacity", "Status"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
 
         for (Hall h : halls) {
-            String status = h.isMaintenance() ? "Maintenance" : "Available";
+            String status = "Available";
+            if (h.isMaintenance()) status = "Under Maintenance";
+
+            // Check Schedule conflicts
+            if (status.equals("Available")) {
+                for (HallSchedule s : schedules) {
+                    if (s.getHallId().equals(h.getId())) {
+                        boolean isTodayInSchedule = (today.isEqual(s.getStartDate()) || today.isAfter(s.getStartDate())) &&
+                                (today.isEqual(s.getEndDate()) || today.isBefore(s.getEndDate()));
+                        if (isTodayInSchedule) {
+                            if (s.getType().equalsIgnoreCase("MAINTENANCE")) status = "Under Maintenance";
+                            else if (s.getType().equalsIgnoreCase("BOOKED")) status = "Booked Today";
+                        }
+                    }
+                }
+            }
             model.addRow(new Object[]{h.getId(), h.getName(), String.format("%.2f", h.getPricePerHour()), h.getCapacity(), status});
         }
 
@@ -65,25 +79,36 @@ public class CustomerDashboard extends BaseDashboard {
         table.setRowHeight(30);
         JScrollPane scrollPane = new JScrollPane(table);
 
+        // Booking Action
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btnBook = new JButton("Book Selected Hall");
-        btnBook.setBackground(new Color(40, 167, 69));
+        btnBook.setBackground(new Color(40, 167, 69)); // Green
         btnBook.setForeground(Color.WHITE);
 
         btnBook.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row == -1) { JOptionPane.showMessageDialog(this, "Please select a hall."); return; }
-
-            String hallId = (String) model.getValueAt(row, 0);
-            String status = (String) model.getValueAt(row, 4);
-
-            if (status.equalsIgnoreCase("Maintenance")) {
-                JOptionPane.showMessageDialog(this, "Hall is under maintenance.");
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a hall.");
                 return;
             }
 
-            Hall selectedHall = halls.stream().filter(h -> h.getId().equals(hallId)).findFirst().orElse(null);
-            if (selectedHall != null) new BookingForm(customer, selectedHall);
+            String currentStatus = (String) model.getValueAt(row, 4);
+            if (!currentStatus.equals("Available")) {
+                JOptionPane.showMessageDialog(this, "Cannot book: " + currentStatus);
+                return;
+            }
+
+            String hallId = (String) model.getValueAt(row, 0);
+
+            // Find the Hall object
+            Hall selectedHall = halls.stream()
+                    .filter(h -> h.getId().equals(hallId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (selectedHall != null) {
+                new BookingForm(customer, selectedHall).setVisible(true);
+            }
         });
 
         bottomPanel.add(btnBook);
@@ -91,11 +116,12 @@ public class CustomerDashboard extends BaseDashboard {
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(bottomPanel, BorderLayout.SOUTH);
 
+        // Call your helper method
         setPage(panel);
     }
 
     // ==========================================
-    // VIEW 2: MY BOOKINGS (Read-Only Table)
+    // VIEW 2: MY BOOKINGS
     // ==========================================
     private void showBookingsView() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -103,102 +129,93 @@ public class CustomerDashboard extends BaseDashboard {
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(Color.WHITE);
-        topBar.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
-
-        JLabel titleLabel = new JLabel("My Booking History");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        topBar.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
         String[] filters = {"All Bookings", "Upcoming", "Past History"};
         JComboBox<String> filterBox = new JComboBox<>(filters);
-        JPanel filterPanel = new JPanel();
-        filterPanel.setBackground(Color.WHITE);
-        filterPanel.add(new JLabel("Filter: "));
-        filterPanel.add(filterBox);
-        topBar.add(titleLabel, BorderLayout.WEST);
-        topBar.add(filterPanel, BorderLayout.EAST);
+        JLabel lblHeader = new JLabel("My Booking History");
+        lblHeader.setFont(new Font("Arial", Font.BOLD, 18));
+
+        topBar.add(lblHeader, BorderLayout.WEST);
+        topBar.add(filterBox, BorderLayout.EAST);
         panel.add(topBar, BorderLayout.NORTH);
 
         String[] columns = {"Booking ID", "Hall Name", "Date", "Time", "Status"};
-
-        // FIX: Make Table Non-Editable
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            @Override public boolean isCellEditable(int row, int col) { return false; }
         };
-
         JTable table = new JTable(model);
         table.setRowHeight(30);
-        JScrollPane scrollPane = new JScrollPane(table);
 
-        List<Booking> allBookings = FileHandler.loadBookings();
-        List<Hall> allHalls = FileHandler.loadHalls();
-
+        // Function to refresh table data
         Runnable refreshTable = () -> {
             model.setRowCount(0);
-            String selectedFilter = (String) filterBox.getSelectedItem();
+            String filter = (String) filterBox.getSelectedItem();
             LocalDate today = LocalDate.now();
+            List<Booking> all = FileHandler.loadBookings();
+            List<Hall> allHalls = FileHandler.loadHalls();
 
-            List<Booking> filtered = allBookings.stream()
+            List<Booking> userBookings = all.stream()
                     .filter(b -> b.getCustomerEmail().equalsIgnoreCase(customer.getEmail()))
                     .filter(b -> {
-                        if ("Upcoming".equals(selectedFilter)) return !b.getDate().isBefore(today);
-                        if ("Past History".equals(selectedFilter)) return b.getDate().isBefore(today);
+                        if ("Upcoming".equals(filter)) return !b.getDate().isBefore(today);
+                        if ("Past History".equals(filter)) return b.getDate().isBefore(today);
                         return true;
-                    })
-                    .collect(Collectors.toList());
+                    }).collect(Collectors.toList());
 
-            for (Booking b : filtered) {
+            for (Booking b : userBookings) {
                 String hallName = allHalls.stream()
-                        .filter(h -> h.getId().equals(b.getHallId())).map(Hall::getName).findFirst().orElse(b.getHallId());
-                model.addRow(new Object[]{b.getBookingId(), hallName, b.getDate(), b.getStartTime() + " - " + b.getEndTime(), b.getStatus()});
+                        .filter(h -> h.getId().equals(b.getHallId()))
+                        .map(Hall::getName)
+                        .findFirst()
+                        .orElse(b.getHallId());
+                model.addRow(new Object[]{b.getBookingId(), hallName, b.getDate(), b.getStartTime() + "-" + b.getEndTime(), b.getStatus()});
             }
         };
 
-        refreshTable.run();
+        refreshTable.run(); // Initial Load
         filterBox.addActionListener(e -> refreshTable.run());
 
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // Actions
+        JPanel bottomPanel = new JPanel();
+
         JButton btnIssue = new JButton("Report Issue");
-        btnIssue.setBackground(new Color(255, 193, 7)); // Amber
-
-        JButton btnCancel = new JButton("Cancel Booking");
-        btnCancel.setBackground(new Color(220, 53, 69)); // Red
-        btnCancel.setForeground(Color.WHITE);
-
-        // Logic for Report Issue
         btnIssue.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row == -1) { JOptionPane.showMessageDialog(this, "Select a booking first."); return; }
-            String bookingId = (String) model.getValueAt(row, 0);
-            Booking b = allBookings.stream().filter(bk -> bk.getBookingId().equals(bookingId)).findFirst().orElse(null);
-            if (b != null) new IssueForm(customer, b);
+            if(row == -1) { JOptionPane.showMessageDialog(this, "Select a booking first."); return; }
+
+            String bid = (String) model.getValueAt(row, 0);
+            Booking b = FileHandler.loadBookings().stream().filter(bk->bk.getBookingId().equals(bid)).findFirst().orElse(null);
+
+            if(b != null) new IssueForm(customer, b).setVisible(true);
         });
 
-        // Logic for Cancel
+        JButton btnCancel = new JButton("Cancel Booking");
+        btnCancel.setBackground(Color.RED);
+        btnCancel.setForeground(Color.WHITE);
         btnCancel.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row == -1) { JOptionPane.showMessageDialog(this, "Select a booking first."); return; }
-            String dateStr = (String) model.getValueAt(row, 2);
-            String status = (String) model.getValueAt(row, 4);
-            if ("CANCELLED".equalsIgnoreCase(status)) { JOptionPane.showMessageDialog(this, "Already cancelled."); return; }
+            if (row == -1) return;
+            String bid = (String) model.getValueAt(row, 0);
 
-            if (ChronoUnit.DAYS.between(LocalDate.now(), LocalDate.parse(dateStr)) < 3) {
-                JOptionPane.showMessageDialog(this, "Must cancel 3 days in advance.");
-            } else {
-                if(JOptionPane.showConfirmDialog(this, "Are you sure?") == JOptionPane.YES_OPTION)
-                    JOptionPane.showMessageDialog(this, "Cancellation Successful (Logic pending)");
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to cancel?", "Confirm", JOptionPane.YES_NO_OPTION);
+            if(confirm == JOptionPane.YES_OPTION) {
+                if (FileHandler.updateBookingStatus(bid, "CANCELLED")) {
+                    JOptionPane.showMessageDialog(this, "Booking Cancelled!");
+                    refreshTable.run();
+                }
             }
         });
 
         bottomPanel.add(btnIssue);
         bottomPanel.add(btnCancel);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
         panel.add(bottomPanel, BorderLayout.SOUTH);
         setPage(panel);
     }
 
     // ==========================================
-    // VIEW 3: MY ISSUES (New & Read-Only)
+    // VIEW 3: MY ISSUES
     // ==========================================
     private void showIssuesView() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -208,38 +225,27 @@ public class CustomerDashboard extends BaseDashboard {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
 
-        List<Issue> allIssues = FileHandler.loadIssues();
+        String[] columns = {"Issue ID", "Booking ID", "Description", "Status", "Date Reported"};
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
 
-        // Filter: Only show issues for THIS customer
+        List<Issue> allIssues = FileHandler.loadIssues();
         List<Issue> myIssues = allIssues.stream()
                 .filter(i -> i.getCustomerEmail().equalsIgnoreCase(customer.getEmail()))
                 .collect(Collectors.toList());
 
-        String[] columns = {"Issue ID", "Booking ID", "Description", "Status", "Date Reported"};
-
-        // FIX: Make Table Non-Editable
-        DefaultTableModel model = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
-        };
-
         for (Issue i : myIssues) {
             model.addRow(new Object[]{
-                    i.getIssueId(),
-                    i.getBookingId(),
-                    i.getDescription(),
-                    i.getStatus(),
-                    i.getDateReported().toString()
+                    i.getIssueId(), i.getBookingId(), i.getDescription(), i.getStatus(), i.getDateReported().toString()
             });
         }
 
         JTable table = new JTable(model);
         table.setRowHeight(30);
-        JScrollPane scrollPane = new JScrollPane(table);
 
         panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
         setPage(panel);
     }
 
@@ -249,51 +255,71 @@ public class CustomerDashboard extends BaseDashboard {
     private void showProfileView() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(10, 10, 10, 10);
+        g.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel title = new JLabel("My Profile");
         title.setFont(new Font("Arial", Font.BOLD, 24));
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        panel.add(title, gbc);
-        gbc.gridwidth = 1;
 
-        gbc.gridy++; gbc.gridx = 0; panel.add(new JLabel("Full Name:"), gbc);
-        gbc.gridx = 1; JTextField txtName = new JTextField(customer.getName(), 20); txtName.setEditable(false); panel.add(txtName, gbc);
+        g.gridx = 0; g.gridy = 0; g.gridwidth = 2; panel.add(title, g);
+        g.gridwidth = 1;
 
-        gbc.gridy++; gbc.gridx = 0; panel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1; JTextField txtEmail = new JTextField(customer.getEmail(), 20); txtEmail.setEditable(false); panel.add(txtEmail, gbc);
+        g.gridy++; g.gridx = 0; panel.add(new JLabel("Full Name:"), g);
+        g.gridx = 1; JTextField txtName = new JTextField(customer.getName(), 20); txtName.setEditable(false); panel.add(txtName, g);
 
-        gbc.gridy++; gbc.gridx = 0; panel.add(new JLabel("Phone:"), gbc);
-        gbc.gridx = 1; JTextField txtPhone = new JTextField(customer.getContactNumber(), 20); txtPhone.setEditable(false); panel.add(txtPhone, gbc);
+        g.gridy++; g.gridx = 0; panel.add(new JLabel("Email:"), g);
+        g.gridx = 1; JTextField txtEmail = new JTextField(customer.getEmail(), 20); txtEmail.setEditable(false); panel.add(txtEmail, g);
+
+        g.gridy++; g.gridx = 0; panel.add(new JLabel("Phone:"), g);
+        g.gridx = 1; JTextField txtPhone = new JTextField(customer.getContactNumber(), 20); txtPhone.setEditable(false); panel.add(txtPhone, g);
 
         JPanel btnPanel = new JPanel(new FlowLayout());
         JButton btnEdit = new JButton("Edit Profile");
         JButton btnSave = new JButton("Save Changes");
-        btnSave.setEnabled(false); btnSave.setBackground(new Color(40, 167, 69)); btnSave.setForeground(Color.WHITE);
+        btnSave.setEnabled(false);
+        btnSave.setBackground(new Color(40, 167, 69));
+        btnSave.setForeground(Color.WHITE);
 
         btnEdit.addActionListener(e -> {
-            boolean edit = btnSave.isEnabled();
-            txtName.setEditable(!edit); txtEmail.setEditable(!edit); txtPhone.setEditable(!edit);
-            btnSave.setEnabled(!edit); btnEdit.setText(edit ? "Edit Profile" : "Cancel");
+            boolean isEditing = btnSave.isEnabled();
+            txtName.setEditable(!isEditing);
+            // txtEmail.setEditable(!isEditing); // Email is usually ID, best not to edit
+            txtPhone.setEditable(!isEditing);
+            btnSave.setEnabled(!isEditing);
+            btnEdit.setText(isEditing ? "Edit Profile" : "Cancel");
+
+            if(isEditing) {
+                // Revert to original if cancelling
+                txtName.setText(customer.getName());
+                txtEmail.setText(customer.getEmail());
+                txtPhone.setText(customer.getContactNumber());
+            }
         });
 
         btnSave.addActionListener(e -> {
             customer.setName(txtName.getText());
-            customer.setEmail(txtEmail.getText());
+            // customer.setEmail(txtEmail.getText());
             customer.setContactNumber(txtPhone.getText());
+
             if(FileHandler.updateUser(customer)) {
-                JOptionPane.showMessageDialog(this, "Saved!");
+                JOptionPane.showMessageDialog(this, "Profile Saved!");
                 txtName.setEditable(false); txtEmail.setEditable(false); txtPhone.setEditable(false);
-                btnSave.setEnabled(false); btnEdit.setText("Edit Profile");
+                btnSave.setEnabled(false);
+                btnEdit.setText("Edit Profile");
+            } else {
+                JOptionPane.showMessageDialog(this, "Error saving profile.");
             }
         });
 
-        btnPanel.add(btnEdit); btnPanel.add(btnSave);
-        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2; panel.add(btnPanel, gbc);
+        btnPanel.add(btnEdit);
+        btnPanel.add(btnSave);
 
-        JPanel c = new JPanel(new FlowLayout()); c.add(panel);
-        setPage(c);
+        g.gridy++; g.gridx = 0; g.gridwidth = 2; panel.add(btnPanel, g);
+
+        JPanel wrapper = new JPanel(new FlowLayout());
+        wrapper.setBackground(Color.WHITE);
+        wrapper.add(panel);
+        setPage(wrapper);
     }
 }

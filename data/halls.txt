@@ -1,4 +1,4 @@
 H001,Grand Ballroom,300.0,1000,false
 H002,Banquet Hall,100.0,300,false
-H003,Meeting Room A,50.0,30,true
+H003,Meeting Room A,50.0,30,false
 H004,Meeting Room B,50.0,30,false

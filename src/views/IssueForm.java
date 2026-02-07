@@ -50,12 +50,19 @@ public class IssueForm extends JFrame {
             }
 
             // Create Issue Object
-            // Note: You need to ensure IdGenerator handles "ISSUE" or "I" prefix if you want strict IDs
-            // For now, we can use a simple generic ID or update IdGenerator.
-            // Let's assume IdGenerator works for "ISSUE".
             String issueId = IdGenerator.generateNextId("ISSUE");
 
-            Issue newIssue = new Issue(issueId, booking.getBookingId(), customer.getEmail(), desc, "OPEN", LocalDate.now());
+            // --- FIX IS HERE ---
+            // We added "Unassigned" at the end because the new Issue model requires 7 arguments
+            Issue newIssue = new Issue(
+                    issueId,
+                    booking.getBookingId(),
+                    customer.getEmail(),
+                    desc,
+                    "OPEN",
+                    LocalDate.now(),
+                    "Unassigned" // <--- The new field for Scheduler
+            );
 
             if (FileHandler.saveIssue(newIssue)) {
                 JOptionPane.showMessageDialog(this, "Issue Reported Successfully!");
