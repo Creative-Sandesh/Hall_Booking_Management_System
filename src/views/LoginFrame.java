@@ -104,7 +104,7 @@ public class LoginFrame extends JFrame {
         btn.setOpaque(true);
     }
 
-    // REPLACE the old loop inside performLogin() with this:
+
 
     private void performLogin() {
         String inputUser = usernameField.getText();

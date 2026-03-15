@@ -22,11 +22,9 @@ public class Hall {
     public int getCapacity() { return capacity; }
     public boolean isMaintenance() { return isMaintenance; }
 
-    // ==========================================
-    //  THIS IS THE MISSING METHOD
-    // ==========================================
+
     public String getType() {
-        // Logic: Look for text inside parenthesis, e.g., "Hall A (Banquet)"
+
         if (name != null && name.contains("(") && name.endsWith(")")) {
             try {
                 // Returns "Banquet"

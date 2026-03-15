@@ -16,7 +16,7 @@ public class AdminDashboard extends BaseDashboard {
         super("Administrator Dashboard", admin, COLOR_ADMIN);
 
         // --- SIDEBAR UPDATED ---
-        addSidebarButton("Manage Managers", e -> showStaffManagement("MANAGER")); // NEW
+        addSidebarButton("Manage Managers", e -> showStaffManagement("MANAGER"));
         addSidebarButton("Manage Schedulers", e -> showStaffManagement("SCHEDULER"));
         addSidebarButton("Manage Customers", e -> showCustomerManagement());
         addSidebarButton("Booking Mgmt", e -> showBookingManagement());
@@ -29,9 +29,9 @@ public class AdminDashboard extends BaseDashboard {
         setVisible(true);
     }
 
-    // ==========================================
+
     // VIEW 1: STAFF MANAGEMENT (Reused for Manager & Scheduler)
-    // ==========================================
+
     private void showStaffManagement(String roleType) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -131,9 +131,9 @@ public class AdminDashboard extends BaseDashboard {
         setPage(panel);
     }
 
-    // ==========================================
+
     // VIEW 2: CUSTOMER MANAGEMENT (Kept Separate for extra fields)
-    // ==========================================
+
     private void showCustomerManagement() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -150,9 +150,12 @@ public class AdminDashboard extends BaseDashboard {
         panel.add(header, BorderLayout.NORTH);
 
         String[] cols = {"ID", "Username", "Name", "Email", "Phone"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
+        DefaultTableModel model = new DefaultTableModel(cols, 0){
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
         JTable table = new JTable(model);
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        table.setRowHeight(25);
         table.setRowSorter(sorter);
 
         refreshUserTable(model, "CUSTOMER");
@@ -217,9 +220,9 @@ public class AdminDashboard extends BaseDashboard {
         }
     }
 
-    // ==========================================
-    // VIEW 3: BOOKING & HALLS (Unchanged)
-    // ==========================================
+
+    // VIEW 3: BOOKING & HALLS
+
     private void showBookingManagement() {
         // ... (Same as previous Booking Management code) ...
         // Copy the 'showBookingManagement' method from the previous response here
@@ -234,8 +237,11 @@ public class AdminDashboard extends BaseDashboard {
         header.add(title); header.add(new JLabel("| View:")); header.add(cmbFilter); header.add(btnFilter);
         panel.add(header, BorderLayout.NORTH);
         String[] cols = {"Booking ID", "Customer", "Hall", "Date", "Time", "Status"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
+        DefaultTableModel model = new DefaultTableModel(cols, 0){
+            @Override public boolean isCellEditable(int row, int col) { return false; };
+        };
         JTable table = new JTable(model);
+        table.setRowHeight(25);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         Runnable loadData = () -> {
             model.setRowCount(0);
@@ -256,8 +262,7 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private void showHallManagement() {
-        // ... (Same as previous Hall Management code) ...
-        // Copy the 'showHallManagement' method from the previous response here
+
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         JPanel header = new JPanel(new BorderLayout());
@@ -271,8 +276,11 @@ public class AdminDashboard extends BaseDashboard {
         header.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(header, BorderLayout.NORTH);
         String[] cols = {"ID", "Name", "Type", "Capacity", "Rate (RM)", "Maintenance"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
+        DefaultTableModel model = new DefaultTableModel(cols, 0){
+            @Override public boolean isCellEditable(int row, int col){return false;};
+        };
         JTable table = new JTable(model);
+        table.setRowHeight(25);
         model.setRowCount(0);
         for(Hall h : FileHandler.loadHalls()) model.addRow(new Object[]{h.getId(), h.getName(), h.getType(), h.getCapacity(), h.getPricePerHour(), h.isMaintenance()});
         panel.add(new JScrollPane(table), BorderLayout.CENTER);

@@ -65,11 +65,11 @@ public class RegisterFrame extends JFrame {
 
         add(mainPanel);
 
-        // --- ACTIONS ---
+
 
         btnCancel.addActionListener(e -> {
             dispose();
-            new LoginFrame(); // Go back to login
+            new LoginFrame();
         });
 
         btnRegister.addActionListener(e -> registerCustomer());
@@ -100,9 +100,14 @@ public class RegisterFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Please fill in all fields.");
             return;
         }
+        // validating email
+        if(!email.contains("@") || !email.contains(".") || email.indexOf("@")>email.lastIndexOf(".")){
+            JOptionPane.showMessageDialog(this, "Please enter valid email address! (e.g. user@example.com)","Invalid Email",JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         // 3. Create Customer Object
-        // ID is generated automatically using your Util
+        // ID is generated automatically using  Util
         String newId = IdGenerator.generateNextId("CUSTOMER");
         Customer newCustomer = new Customer(newId, user, pass, name, email, phone);
 

@@ -32,9 +32,9 @@ public class SchedulerDashboard extends BaseDashboard {
         setVisible(true);
     }
 
-    // ==========================================
+
     // VIEW 1: BOOKING REQUESTS (Approve/Reject)
-    // ==========================================
+
     private void showBookingRequests() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -58,7 +58,7 @@ public class SchedulerDashboard extends BaseDashboard {
             List<Booking> all = FileHandler.loadBookings();
             List<Booking> pending = all.stream()
                     .filter(b -> b.getStatus().equalsIgnoreCase("PENDING"))
-                    .collect(Collectors.toList());
+                    .toList();
 
             for (Booking b : pending) {
                 model.addRow(new Object[]{
@@ -113,9 +113,8 @@ public class SchedulerDashboard extends BaseDashboard {
         setPage(panel);
     }
 
-    // ==========================================
     // VIEW 2: MAINTENANCE MANAGEMENT
-    // ==========================================
+
     private void showMaintenanceView() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -189,9 +188,9 @@ public class SchedulerDashboard extends BaseDashboard {
         setPage(panel);
     }
 
-    // ==========================================
+
     // VIEW 3: ISSUE RESOLUTION
-    // ==========================================
+
     private void showIssuesView() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -201,8 +200,11 @@ public class SchedulerDashboard extends BaseDashboard {
         panel.add(title, BorderLayout.NORTH);
 
         String[] cols = {"Issue ID", "Hall/Booking", "Description", "Status", "Assigned To"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
+        DefaultTableModel model = new DefaultTableModel(cols, 0){
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
         JTable table = new JTable(model);
+
         table.setRowHeight(30);
 
         Runnable refresh = () -> {

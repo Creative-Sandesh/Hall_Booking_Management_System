@@ -32,9 +32,7 @@ public class HallForm extends JFrame {
             try {
                 String id = IdGenerator.generateNextId("HALL");
                 String name = txtName.getText();
-                String type = (String) cmbType.getSelectedItem(); // Note: Your Hall model stores type inside name or separately? Check model.
-                // Assuming your Hall model constructor is (id, name, price, capacity, maintenance)
-                // If you want to store "Type", you might append it to name like "Banquet Hall A"
+                String type = (String) cmbType.getSelectedItem();
 
                 double price = Double.parseDouble(txtPrice.getText());
                 int cap = Integer.parseInt(txtCap.getText());

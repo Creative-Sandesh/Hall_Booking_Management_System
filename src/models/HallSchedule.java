@@ -26,7 +26,7 @@ public class HallSchedule {
         this.description = description;
     }
 
-    // --- FIX: Ensure this exact method name exists ---
+
     public String getScheduleId() { return scheduleId; }
 
     public String getHallId() { return hallId; }

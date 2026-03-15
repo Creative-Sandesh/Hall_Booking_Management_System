@@ -11,7 +11,6 @@ public abstract class User implements Serializable {
     protected String email;
 
 
-
     // constructor
 
     public User(String id, String username, String password,String name, String email){
@@ -23,7 +22,6 @@ public abstract class User implements Serializable {
 
 
     }
-
 
     // getter methods
     public String getId() {

@@ -23,7 +23,7 @@ public class UserForm extends JFrame {
         this.isEditMode = (userToEdit != null);
 
         setTitle(isEditMode ? "Edit User" : "Add New User");
-        setSize(400, 500); // Slightly taller to fit fields comfortably
+        setSize(400, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
@@ -99,7 +99,7 @@ public class UserForm extends JFrame {
             newUser = new Scheduler(id, uName, pass, name, email);
         }
         else if (role.equals("MANAGER")) {
-            // Ensure you have created the Manager.java model!
+
             newUser = new Manager(id, uName, pass, name, email);
         }
 

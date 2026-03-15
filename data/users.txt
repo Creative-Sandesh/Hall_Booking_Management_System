@@ -5,7 +5,8 @@ U004,mike,boss123,Mike Manager,mike@sys.com,MANAGER
 C001,sandy,12,Sandesh Bohara,sandesh123@gmail.com,123,CUSTOMER
 C002,anjal,anjal1,Anjal,anjal123@gmail.com,123,CUSTOMER
 C003,asmu,asmu,Ashmita,asmu123@gmail.com,SCHEDULER
-C004,aashika,aashika,aashika,aasu@123.com,1234,CUSTOMER
+C004,aashika,aashika,aashika,aasu@123.com,1234,MANAGER
 U005,sital,sital,Sital Singh,sital123@gamil.com,SCHEDULER
-
-U006,sital,sital,sital singh,sital@gmail.com,MANAGER
+C005,chakra,123,chakra,chakra123@gmail.com,123456789,CUSTOMER
+C006,laxmi,12,laxmi,laxmi123@gmail.com,123456789,CUSTOMER
+U006,Ram,ram,Ram hari,ram@gmail.com,MANAGER

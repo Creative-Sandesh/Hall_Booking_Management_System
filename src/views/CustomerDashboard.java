@@ -34,9 +34,8 @@ public class CustomerDashboard extends BaseDashboard {
         setVisible(true);
     }
 
-    // ==========================================
     // VIEW 1: AVAILABLE HALLS
-    // ==========================================
+
     private void showHallsView() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -120,9 +119,9 @@ public class CustomerDashboard extends BaseDashboard {
         setPage(panel);
     }
 
-    // ==========================================
+
     // VIEW 2: MY BOOKINGS
-    // ==========================================
+
     private void showBookingsView() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -214,9 +213,9 @@ public class CustomerDashboard extends BaseDashboard {
         setPage(panel);
     }
 
-    // ==========================================
+
     // VIEW 3: MY ISSUES
-    // ==========================================
+
     private void showIssuesView() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -249,9 +248,9 @@ public class CustomerDashboard extends BaseDashboard {
         setPage(panel);
     }
 
-    // ==========================================
+
     // VIEW 4: PROFILE
-    // ==========================================
+
     private void showProfileView() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);

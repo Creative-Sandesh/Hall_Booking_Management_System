@@ -52,8 +52,7 @@ public class IssueForm extends JFrame {
             // Create Issue Object
             String issueId = IdGenerator.generateNextId("ISSUE");
 
-            // --- FIX IS HERE ---
-            // We added "Unassigned" at the end because the new Issue model requires 7 arguments
+
             Issue newIssue = new Issue(
                     issueId,
                     booking.getBookingId(),
@@ -61,7 +60,7 @@ public class IssueForm extends JFrame {
                     desc,
                     "OPEN",
                     LocalDate.now(),
-                    "Unassigned" // <--- The new field for Scheduler
+                    "Unassigned"
             );
 
             if (FileHandler.saveIssue(newIssue)) {

@@ -14,7 +14,7 @@ public class BookingForm extends JFrame {
 
     private JTextField dateField;
     private JComboBox<String> startBox, endBox;
-    private JTextArea remarksArea; // <--- 1. NEW REMARKS FIELD
+    private JTextArea remarksArea; //
     private Customer customer;
     private Hall hall;
 
@@ -118,7 +118,7 @@ public class BookingForm extends JFrame {
             if (choice == JOptionPane.YES_OPTION) {
                 String newId = IdGenerator.generateNextId("BOOKING");
 
-                // --- FIX 1: Pass 'remarks' into the Constructor ---
+
                 // We also set status to "PENDING" so the Scheduler can approve it later.
                 Booking newBooking = new Booking(
                         newId,
@@ -128,11 +128,11 @@ public class BookingForm extends JFrame {
                         start,
                         end,
                         total,
-                        "PENDING",  // <--- Changed to PENDING
-                        remarks     // <--- Added Remarks here
+                        "PENDING",
+                        remarks
                 );
 
-                // --- FIX 2: Use standard save (Object contains remarks now) ---
+                // Use standard save (Object contains remarks now)
                 if (FileHandler.saveBooking(newBooking)) {
                     JOptionPane.showMessageDialog(this, "Booking Request Sent! Status: PENDING");
                     dispose();

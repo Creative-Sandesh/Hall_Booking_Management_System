@@ -31,9 +31,9 @@ public class ManagerDashboard extends BaseDashboard {
         setVisible(true);
     }
 
-    // =========================================================
-    // FEATURE 1: SALES DASHBOARD (Weekly, Monthly, Yearly)
-    // =========================================================
+
+    // SALES DASHBOARD (Weekly, Monthly, Yearly)
+
     private void showSalesDashboard() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -68,14 +68,30 @@ public class ManagerDashboard extends BaseDashboard {
         statsPanel.add(lblTotalBookings);
         statsPanel.add(lblAvgSale);
 
-        // Details Table
-        String[] columns = {"Date", "Booking ID", "Hall", "Amount (RM)"};
+        // --- UPDATED TABLE COLUMNS ---
+
+        String[] columns = {"Date", "Hall", "Customer (Email)", "Amount (RM)"};
+
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int col) { return false; }
         };
         JTable table = new JTable(model);
+        table.setRowHeight(25);
         JScrollPane scrollPane = new JScrollPane(table);
+
+        // --- CLICK LISTENER FOR CUSTOMER DETAILS
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.getSelectedRow();
+                if (row != -1) {
+                    // Get email from column 2
+                    String customerEmail = (String) model.getValueAt(row, 2);
+                    showCustomerDetails(customerEmail);
+                }
+            }
+        });
 
         // --- CALCULATION LOGIC ---
         Runnable calculateSales = () -> {
@@ -88,7 +104,7 @@ public class ManagerDashboard extends BaseDashboard {
             int count = 0;
 
             for (Booking b : bookings) {
-                // Only count APPROVED bookings as Sales
+                // Only count APPROVED bookings
                 if (!"APPROVED".equalsIgnoreCase(b.getStatus())) continue;
 
                 boolean include = false;
@@ -98,23 +114,23 @@ public class ManagerDashboard extends BaseDashboard {
                     WeekFields wf = WeekFields.of(Locale.getDefault());
                     int currentWeek = now.get(wf.weekOfWeekBasedYear());
                     int bookingWeek = d.get(wf.weekOfWeekBasedYear());
-                    if (d.getYear() == now.getYear() && bookingWeek == currentWeek) {
-                        include = true;
-                    }
+                    if (d.getYear() == now.getYear() && bookingWeek == currentWeek) include = true;
                 } else if ("Monthly".equals(period)) {
-                    if (d.getYear() == now.getYear() && d.getMonth() == now.getMonth()) {
-                        include = true;
-                    }
+                    if (d.getYear() == now.getYear() && d.getMonth() == now.getMonth()) include = true;
                 } else if ("Yearly".equals(period)) {
-                    if (d.getYear() == now.getYear()) {
-                        include = true;
-                    }
+                    if (d.getYear() == now.getYear()) include = true;
                 }
 
                 if (include) {
                     totalRevenue += b.getTotalPrice();
                     count++;
-                    model.addRow(new Object[]{d.toString(), b.getBookingId(), b.getHallId(), String.format("%.2f", b.getTotalPrice())});
+                    // Add row with Customer Email
+                    model.addRow(new Object[]{
+                            d.toString(),
+                            b.getHallId(),
+                            b.getCustomerEmail(),
+                            String.format("%.2f", b.getTotalPrice())
+                    });
                 }
             }
 
@@ -140,6 +156,7 @@ public class ManagerDashboard extends BaseDashboard {
         JPanel mainContent = new JPanel(new BorderLayout());
         mainContent.add(centerContainer, BorderLayout.NORTH);
         mainContent.add(scrollPane, BorderLayout.CENTER);
+        mainContent.add(new JLabel("  (Click on a row to view Customer Details)"), BorderLayout.SOUTH);
 
         panel.add(titleLabel, BorderLayout.NORTH);
         panel.add(mainContent, BorderLayout.CENTER);
@@ -154,9 +171,9 @@ public class ManagerDashboard extends BaseDashboard {
         return l;
     }
 
-    // =========================================================
-    // FEATURE 2: MANAGE ISSUES
-    // =========================================================
+
+    //  2: MANAGE ISSUES
+
     private void showIssuesView() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -238,7 +255,7 @@ public class ManagerDashboard extends BaseDashboard {
         desc.setBackground(Color.LIGHT_GRAY);
         form.add(new JScrollPane(desc), gbc);
 
-        // --- FIX: GET SCHEDULERS DIRECTLY (No FileHandler method needed) ---
+        // GET SCHEDULERS DIRECTLY
         gbc.gridy++;
         form.add(new JLabel("Assign Scheduler:"), gbc); gbc.gridy++;
 
@@ -253,7 +270,7 @@ public class ManagerDashboard extends BaseDashboard {
         schedulerBox.setSelectedItem(issue.getAssignedScheduler());
         form.add(schedulerBox, gbc);
 
-        // --- UPDATE STATUS ---
+        // UPDATE STATUS
         gbc.gridy++;
         form.add(new JLabel("Update Status:"), gbc); gbc.gridy++;
         String[] statuses = {"In Progress", "Done", "Closed", "Cancelled"};
@@ -284,56 +301,143 @@ public class ManagerDashboard extends BaseDashboard {
         dialog.setVisible(true);
     }
 
-    // =========================================================
-    // FEATURE 3: APPROVE BOOKINGS
-    // =========================================================
+
+    //  3: APPROVE BOOKINGS
+
+
     private void showApprovals() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
 
         // Header
-        JLabel titleLabel = new JLabel("  Approve Bookings");
+        JLabel titleLabel = new JLabel("  Manage Bookings");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
 
-        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Customer", "Date", "Status"}, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return false; }
+        // Table Model
+        String[] cols = {"ID", "Customer", "Date", "Hall", "Status"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) { return false; }
         };
         JTable table = new JTable(model);
+        table.setRowHeight(25);
 
-        Runnable load = () -> {
+        // Load Data Logic (Shows ALL bookings, PENDING first)
+        Runnable loadData = () -> {
             model.setRowCount(0);
-            FileHandler.loadBookings().stream()
-                    .filter(b -> b.getStatus().equals("PENDING"))
-                    .forEach(b -> model.addRow(new Object[]{b.getBookingId(), b.getCustomerEmail(), b.getDate(), b.getStatus()}));
-        };
-        load.run();
+            List<Booking> bookings = FileHandler.loadBookings();
 
-        JButton btnApprove = new JButton("Approve Selected");
-        btnApprove.setBackground(new Color(30, 58, 138));
+            // Sort: PENDING first, then by Date
+            bookings.sort((b1, b2) -> {
+                if (b1.getStatus().equals("PENDING") && !b2.getStatus().equals("PENDING")) return -1;
+                if (!b1.getStatus().equals("PENDING") && b2.getStatus().equals("PENDING")) return 1;
+                return b1.getDate().compareTo(b2.getDate());
+            });
+
+            for (Booking b : bookings) {
+                model.addRow(new Object[]{
+                        b.getBookingId(),
+                        b.getCustomerEmail(),
+                        b.getDate(),
+                        b.getHallId(),
+                        b.getStatus()
+                });
+            }
+        };
+
+        // Initial Load
+        loadData.run();
+
+        // Buttons
+        JButton btnApprove = new JButton("Approve");
+        btnApprove.setBackground(new Color(40, 167, 69)); // Green
         btnApprove.setForeground(Color.WHITE);
 
+        JButton btnReject = new JButton("Reject");
+        btnReject.setBackground(new Color(220, 53, 69)); // Red
+        btnReject.setForeground(Color.WHITE);
+
+        //APPROVE ACTION
         btnApprove.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row != -1) {
                 String id = (String) model.getValueAt(row, 0);
-                if(FileHandler.updateBookingStatus(id, "APPROVED")) {
-                    load.run();
-                    JOptionPane.showMessageDialog(this, "Booking Approved!");
+                String currentStatus = (String) model.getValueAt(row, 4);
+
+                if (!"PENDING".equalsIgnoreCase(currentStatus)) {
+                    JOptionPane.showMessageDialog(this, "This booking is already processed.");
+                    return;
+                }
+
+                if (FileHandler.updateBookingStatus(id, "APPROVED")) {
+                    JOptionPane.showMessageDialog(this, "Booking Approved Successfully!");
+                    loadData.run(); // Refresh table to show "APPROVED"
                 } else {
-                    JOptionPane.showMessageDialog(this, "Error updating booking.");
+                    JOptionPane.showMessageDialog(this, "Error saving status.");
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Select a booking first.");
+                JOptionPane.showMessageDialog(this, "Please select a booking to approve.");
             }
         });
 
+        //REJECT ACTION
+        btnReject.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row != -1) {
+                String id = (String) model.getValueAt(row, 0);
+                // Confirm before rejecting
+                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to REJECT this booking?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    if (FileHandler.updateBookingStatus(id, "REJECTED")) {
+                        JOptionPane.showMessageDialog(this, "Booking Rejected.");
+                        loadData.run(); // Refresh table to show "REJECTED"
+                    }
+                }
+            }
+        });
+
+        // Button Panel
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnPanel.add(btnApprove);
+        btnPanel.add(btnReject);
 
         panel.add(titleLabel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
+
         setPage(panel);
+    }
+
+    // HELPER: SHOW CUSTOMER POPUP
+    private void showCustomerDetails(String email) {
+        // 1. Find the user from the file
+        List<User> users = FileHandler.loadUsers();
+        User foundUser = users.stream()
+                .filter(u -> u.getEmail().equalsIgnoreCase(email))
+                .findFirst()
+                .orElse(null);
+
+        if (foundUser == null) {
+            JOptionPane.showMessageDialog(this, "Customer details not found (User might be deleted).");
+            return;
+        }
+
+        // 2. Build the message
+        StringBuilder msg = new StringBuilder();
+        msg.append("User ID: ").append(foundUser.getId()).append("\n");
+        msg.append("Name: ").append(foundUser.getName()).append("\n");
+        msg.append("Email: ").append(foundUser.getEmail()).append("\n");
+        msg.append("Role: ").append(foundUser.getRole()).append("\n");
+
+        // 3. If it's a Customer, show Phone Number
+        if (foundUser instanceof Customer) {
+            Customer c = (Customer) foundUser;
+            msg.append("Phone: ").append(c.getContactNumber()).append("\n");
+        }
+
+        // 4. Show Dialog
+        JOptionPane.showMessageDialog(this, msg.toString(), "Customer Details", JOptionPane.INFORMATION_MESSAGE);
     }
 }

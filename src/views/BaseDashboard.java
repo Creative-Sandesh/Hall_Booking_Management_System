@@ -15,7 +15,7 @@ public class BaseDashboard extends JFrame {
     public static final Color COLOR_BG      = new Color(243, 244, 246);   // Light Grey
 
     // Component
-    protected JPanel contentPanel; // Child classes content will here
+    protected JPanel contentPanel;
     private JPanel sidebarPanel;
 
     public BaseDashboard(String pageTitle, User user, Color headerColor){
@@ -52,12 +52,10 @@ public class BaseDashboard extends JFrame {
         contentPanel.add(new JLabel("Select an option from the menu.", SwingConstants.CENTER));
         add(contentPanel, BorderLayout.CENTER);
 
-        // 5. Add default Logout Button at the bottom
-        // We add a "Glue" to push the logout button to the bottom if needed,
-        // or we can just let the child add it. Let's provide a helper.
+
 
     }
-    // --- HELPER FUNCTION: Child classes call this to add a menu button ---
+
     protected void addSidebarButton(String text, java.awt.event.ActionListener action) {
         JButton btn = new JButton(text);
         btn.setMaximumSize(new Dimension(200, 40)); // Fixed size
@@ -69,7 +67,7 @@ public class BaseDashboard extends JFrame {
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.addActionListener(action);
 
-        // --- HOVER EFFECT (NEW) ---
+        // HOVER EFFECT
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 btn.setBackground(new Color(75, 85, 99)); // Slightly lighter gray
@@ -85,7 +83,7 @@ public class BaseDashboard extends JFrame {
         sidebarPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Space between buttons
     }
 
-    // --- HELPER FUNCTION: Add Logout Button specially ---
+    // HELPER FUNCTION: Add Logout Button specially
     protected void addLogoutButton() {
         sidebarPanel.add(Box.createVerticalGlue()); // Pushes logout to bottom
 
@@ -106,7 +104,7 @@ public class BaseDashboard extends JFrame {
         sidebarPanel.add(btn);
     }
 
-    // --- HELPER FUNCTION: Swap the center screen ---
+    // HELPER FUNCTION: Swap the center screen
     protected void setPage(JComponent component) {
         contentPanel.removeAll();
         contentPanel.add(component, BorderLayout.CENTER);

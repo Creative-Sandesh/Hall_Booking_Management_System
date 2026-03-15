@@ -7,28 +7,41 @@ import java.util.Scanner;
 
 public class IdGenerator {
 
-    // Helper to extract the numeric part of an ID (e.g., "C005" -> 5)
     private static int extractIdNumber(String idString) {
-        // Remove the first character (the letter)
+        // Minor safeguard: check if string is too short to substring
+        if (idString == null || idString.length() < 2) return 0;
+
         String numberPart = idString.substring(1);
         try {
             return Integer.parseInt(numberPart);
         } catch (NumberFormatException e) {
-            return 0; // If ID is weird, treat it as 0
+            return 0;
         }
     }
 
     public static String generateNextId(String role) {
-        String prefix = "U"; // Default
-        if (role.equalsIgnoreCase("CUSTOMER")) prefix = "C";
-        else if (role.equalsIgnoreCase("ADMIN")) prefix = "A";
-        else if (role.equalsIgnoreCase("SCHEDULER")) prefix = "S";
-        else if (role.equalsIgnoreCase("MANAGER")) prefix = "M";
-        else if (role.equalsIgnoreCase("ISSUE")) prefix = "I";   // <--- ADD THIS
-        else if (role.equalsIgnoreCase("BOOKING")) prefix = "B";
+        String prefix = "U";
+        String targetFilename = FileName.USERS.getFilename(); // Default to USERS file
+
+        // Map role to both Prefix AND the correct File
+        if (role.equalsIgnoreCase("CUSTOMER")) {
+            prefix = "C";
+        } else if (role.equalsIgnoreCase("ADMIN")) {
+            prefix = "A";
+        } else if (role.equalsIgnoreCase("SCHEDULER")) {
+            prefix = "S";
+        } else if (role.equalsIgnoreCase("MANAGER")) {
+            prefix = "M";
+        } else if (role.equalsIgnoreCase("ISSUE")) {
+            prefix = "I";
+            targetFilename = FileName.ISSUES.getFilename(); // <-- Point to Issues file
+        } else if (role.equalsIgnoreCase("BOOKING")) {
+            prefix = "B";
+            targetFilename = FileName.BOOKINGS.getFilename(); // <-- Point to Bookings file
+        }
 
         int maxId = 0;
-        File file = new File(FileName.USERS.getFilename());
+        File file = new File(targetFilename);
 
         if (file.exists()) {
             try (Scanner scanner = new Scanner(file)) {
@@ -37,22 +50,23 @@ public class IdGenerator {
                     if (line.trim().isEmpty()) continue;
 
                     String[] parts = line.split(",");
-                    String currentId = parts[0].trim();
+                    // Safeguard: Ensure the line actually split into parts before accessing index 0
+                    if (parts.length > 0) {
+                        String currentId = parts[0].trim();
 
-                    // If we found an ID starting with our letter (e.g., "C")
-                    if (currentId.startsWith(prefix)) {
-                        int currentNum = extractIdNumber(currentId);
-                        if (currentNum > maxId) {
-                            maxId = currentNum;
+                        if (currentId.startsWith(prefix)) {
+                            int currentNum = extractIdNumber(currentId);
+                            if (currentNum > maxId) {
+                                maxId = currentNum;
+                            }
                         }
                     }
                 }
             } catch (FileNotFoundException e) {
-                System.out.println("Error reading file for IDs");
+                System.out.println("Error reading file for IDs: " + targetFilename);
             }
         }
 
-        // Return next ID (e.g., Prefix + (max + 1) padded with zeros)
         return String.format("%s%03d", prefix, maxId + 1);
     }
 }
