@@ -7,11 +7,15 @@ import java.util.Scanner;
 
 public class IdGenerator {
 
-    private static int extractIdNumber(String idString) {
-        // Minor safeguard: check if string is too short to substring
-        if (idString == null || idString.length() < 2) return 0;
 
-        String numberPart = idString.substring(1);
+    private static int extractIdNumber(String idString) {
+        if (idString == null) return 0;
+
+
+        String numberPart = idString.replaceAll("\\D+", "");
+
+        if (numberPart.isEmpty()) return 0;
+
         try {
             return Integer.parseInt(numberPart);
         } catch (NumberFormatException e) {
@@ -34,10 +38,13 @@ public class IdGenerator {
             prefix = "M";
         } else if (role.equalsIgnoreCase("ISSUE")) {
             prefix = "I";
-            targetFilename = FileName.ISSUES.getFilename(); // <-- Point to Issues file
+            targetFilename = FileName.ISSUES.getFilename();
         } else if (role.equalsIgnoreCase("BOOKING")) {
             prefix = "B";
-            targetFilename = FileName.BOOKINGS.getFilename(); // <-- Point to Bookings file
+            targetFilename = FileName.BOOKINGS.getFilename();
+        } else if (role.equalsIgnoreCase("SCH") || role.equalsIgnoreCase("SCHEDULE")) {
+            prefix = "SCH";
+            targetFilename = FileName.SCHEDULES.getFilename();
         }
 
         int maxId = 0;
@@ -50,7 +57,7 @@ public class IdGenerator {
                     if (line.trim().isEmpty()) continue;
 
                     String[] parts = line.split(",");
-                    // Safeguard: Ensure the line actually split into parts before accessing index 0
+
                     if (parts.length > 0) {
                         String currentId = parts[0].trim();
 

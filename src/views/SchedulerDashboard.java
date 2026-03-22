@@ -113,6 +113,7 @@ public class SchedulerDashboard extends BaseDashboard {
         setPage(panel);
     }
 
+
     // VIEW 2: MAINTENANCE MANAGEMENT
 
     private void showMaintenanceView() {
@@ -127,7 +128,8 @@ public class SchedulerDashboard extends BaseDashboard {
         JComboBox<String> cmbHalls = new JComboBox<>();
         FileHandler.loadHalls().forEach(h -> cmbHalls.addItem(h.getName() + " (" + h.getId() + ")"));
 
-        JTextField txtDate = new JTextField("YYYY-MM-DD");
+        // Improved default date
+        JTextField txtDate = new JTextField(LocalDate.now().toString());
         JTextField txtStartTime = new JTextField("08:00");
         JTextField txtEndTime = new JTextField("18:00");
 
@@ -142,21 +144,51 @@ public class SchedulerDashboard extends BaseDashboard {
         timePanel.add(txtStartTime); timePanel.add(new JLabel(" to ")); timePanel.add(txtEndTime);
         header.add(timePanel);
 
+        panel.add(header, BorderLayout.NORTH);
+
+        // Table Setup
+        String[] cols = {"Schedule ID", "Hall ID", "Date", "Type"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0){
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        JTable table = new JTable(model);
+        table.setRowHeight(30);
+
+        // --- NEW: Refresh logic moved to a Runnable so we can update the table easily ---
+        Runnable refresh = () -> {
+            model.setRowCount(0);
+            List<HallSchedule> schedules = FileHandler.loadSchedules();
+            for(HallSchedule s : schedules) {
+                if(s.getType().equalsIgnoreCase("MAINTENANCE")) {
+                    model.addRow(new Object[]{s.getScheduleId(), s.getHallId(), s.getStartDate(), s.getType()});
+                }
+            }
+        };
+        refresh.run(); // Load initial data
+
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // --- NEW: Bottom panel to hold both buttons ---
+        JPanel bottomPanel = new JPanel();
+
         JButton btnSchedule = new JButton("Schedule Maintenance");
         btnSchedule.setBackground(COLOR_SCHEDULER);
         btnSchedule.setForeground(Color.WHITE);
 
+        JButton btnRemove = new JButton("Remove Maintenance");
+        btnRemove.setBackground(new Color(220, 38, 38)); // Red
+        btnRemove.setForeground(Color.WHITE);
+
+        // ADD MAINTENANCE LOGIC
         btnSchedule.addActionListener(e -> {
             try {
                 String selectedStr = (String) cmbHalls.getSelectedItem();
-                // Extract ID from "Name (ID)"
                 String hallId = selectedStr.substring(selectedStr.lastIndexOf("(") + 1, selectedStr.lastIndexOf(")"));
 
                 LocalDate date = LocalDate.parse(txtDate.getText());
                 LocalTime start = LocalTime.parse(txtStartTime.getText());
                 LocalTime end = LocalTime.parse(txtEndTime.getText());
 
-                // Create Schedule Object
                 String schedId = IdGenerator.generateNextId("SCH");
                 HallSchedule maintenance = new HallSchedule(
                         schedId, hallId, "MAINTENANCE",
@@ -165,25 +197,45 @@ public class SchedulerDashboard extends BaseDashboard {
 
                 if(FileHandler.saveSchedule(maintenance)) {
                     JOptionPane.showMessageDialog(this, "Maintenance Scheduled!");
+                    refresh.run(); // Instantly update the table
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Invalid Date/Time format.");
             }
         });
 
-        panel.add(header, BorderLayout.NORTH);
-
-        // Simple list of existing maintenance
-        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Hall", "Date", "Type"}, 0);
-        JTable table = new JTable(model);
-        List<HallSchedule> schedules = FileHandler.loadSchedules();
-        for(HallSchedule s : schedules) {
-            if(s.getType().equals("MAINTENANCE")) {
-                model.addRow(new Object[]{s.getScheduleId(), s.getHallId(), s.getStartDate(), s.getType()});
+        // --- NEW: REMOVE MAINTENANCE LOGIC ---
+        btnRemove.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if(row == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a maintenance schedule from the table to remove.");
+                return;
             }
-        }
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
-        panel.add(btnSchedule, BorderLayout.SOUTH);
+
+            // Get the Schedule ID from the first column of the selected row
+            String schedId = (String) model.getValueAt(row, 0);
+
+            int confirm = JOptionPane.showConfirmDialog(this, "Remove this maintenance block? The hall will become available for booking.", "Confirm", JOptionPane.YES_NO_OPTION);
+
+            if(confirm == JOptionPane.YES_OPTION) {
+                List<HallSchedule> schedules = FileHandler.loadSchedules();
+
+                // Remove the schedule from the Java List
+                schedules.removeIf(s -> s.getScheduleId().equals(schedId));
+
+                // Save the updated list back to the text file
+                if(FileHandler.saveAllSchedules(schedules)) {
+                    JOptionPane.showMessageDialog(this, "Maintenance Removed! Hall is now free.");
+                    refresh.run(); // Instantly update the table
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error removing maintenance.");
+                }
+            }
+        });
+
+        bottomPanel.add(btnSchedule);
+        bottomPanel.add(btnRemove);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
 
         setPage(panel);
     }

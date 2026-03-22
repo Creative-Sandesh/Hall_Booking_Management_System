@@ -1,7 +1,7 @@
 package views;
 
 import models.*;
-import services.FileHandler; // Ensure this is imported
+import services.BookingService;
 import utils.IdGenerator;
 import utils.DatePicker;
 
@@ -14,7 +14,7 @@ public class BookingForm extends JFrame {
 
     private JTextField dateField;
     private JComboBox<String> startBox, endBox;
-    private JTextArea remarksArea; //
+    private JTextArea remarksArea;
     private Customer customer;
     private Hall hall;
 
@@ -23,11 +23,10 @@ public class BookingForm extends JFrame {
         this.hall = hall;
 
         setTitle("Book Hall: " + hall.getName());
-        setSize(400, 600); // Increased height to fit remarks
+        setSize(400, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        // Changed to (0, 1) to allow unlimited rows
         JPanel panel = new JPanel(new GridLayout(0, 1, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -60,12 +59,12 @@ public class BookingForm extends JFrame {
         endBox.setSelectedIndex(1);
         panel.add(endBox);
 
-        // --- 2. NEW REMARKS UI ---
+        // --- REMARKS UI ---
         panel.add(new JLabel("Remarks / Event Purpose:"));
         remarksArea = new JTextArea(3, 20);
         remarksArea.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         remarksArea.setLineWrap(true);
-        // Wrap in ScrollPane in case text is long
+
         JScrollPane scrollRemarks = new JScrollPane(remarksArea);
         panel.add(scrollRemarks);
 
@@ -83,7 +82,6 @@ public class BookingForm extends JFrame {
         try {
             // 1. Parse Inputs
             String dateString = dateField.getText();
-            // Validate Date isn't empty
             if(dateString.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Please pick a date.");
                 return;
@@ -93,7 +91,7 @@ public class BookingForm extends JFrame {
             LocalTime start = LocalTime.parse((String) startBox.getSelectedItem());
             LocalTime end = LocalTime.parse((String) endBox.getSelectedItem());
 
-            // 2. Validate Time
+            // 2. Validate Time basics (Service will also check this, but good to keep UI validation)
             if (!start.isBefore(end)) {
                 JOptionPane.showMessageDialog(this, "End time must be after start time!");
                 return;
@@ -118,8 +116,6 @@ public class BookingForm extends JFrame {
             if (choice == JOptionPane.YES_OPTION) {
                 String newId = IdGenerator.generateNextId("BOOKING");
 
-
-                // We also set status to "PENDING" so the Scheduler can approve it later.
                 Booking newBooking = new Booking(
                         newId,
                         customer.getEmail(),
@@ -132,17 +128,21 @@ public class BookingForm extends JFrame {
                         remarks
                 );
 
-                // Use standard save (Object contains remarks now)
-                if (FileHandler.saveBooking(newBooking)) {
+
+                // 6. VALIDATE COLLISION AND SAVE
+
+                String result = BookingService.createBooking(newBooking);
+
+                if (result.equals("Success")) {
                     JOptionPane.showMessageDialog(this, "Booking Request Sent! Status: PENDING");
-                    dispose();
+                    dispose(); // Close the form
                 } else {
-                    JOptionPane.showMessageDialog(this, "Error saving booking.");
+                    JOptionPane.showMessageDialog(this, result, "Booking Failed", JOptionPane.ERROR_MESSAGE);
                 }
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
-            ex.printStackTrace(); // Helpful for debugging
+            ex.printStackTrace();
         }
     }
 }
