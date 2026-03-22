@@ -3,3 +3,5 @@ B002,laxmi123@gmail.com,H001,2026-03-17,08:00,09:00,300.0,REJECTED,For Party
 B003,ali@gmail.com,H002,2025-03-17,08:00,09:00,100.0,REJECTED,for party
 B004,sandesh123@gmail.com,H002,2026-03-15,11:00,16:00,500.0,APPROVED,FOr college party
 B005,sandesh123@gmail.com,H002,2025-12-10,10:00,18:00,800.0,APPROVED,FOr college
+B006,sandesh123@gmail.com,H003,2026-03-18,08:00,18:00,500.0,PENDING,None
+B007,sandesh123@gmail.com,H003,2026-03-16,08:00,09:00,50.0,PENDING,None

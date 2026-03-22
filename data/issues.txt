@@ -2,3 +2,5 @@ I001,B004,sandesh123@gmail.com,NO water,RESOLVED,2026-03-15,Sital Singh
 I002,B002,laxmi123@gmail.com,No light,RESOLVED,2026-03-15,Sital Singh
 I003,B003,ali@gmail.com,NO ac,RESOLVED,2025-03-15,Sarah Staff
 I004,B001,chakra123@gmail.com,NO fan,RESOLVED,2026-03-15,Sarah Staff
+I005,B005,sandesh123@gmail.com,pani xainw,RESOLVED,2026-03-15,Ashmita
+I006,B007,sandesh123@gmail.com,hsjdlkS,RESOLVED,2026-03-16,Ashmita
